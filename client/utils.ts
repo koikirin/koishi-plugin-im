@@ -1,7 +1,7 @@
+import { IM } from '@hieuzest/koishi-plugin-im';
 import { useStorage } from '@koishijs/client';
 import type { RemovableRef } from '@vueuse/core';
 import type { Dict } from 'koishi';
-import { IM } from 'koishi-plugin-im';
 
 declare module '@koishijs/client' {
   interface ActionContext {

@@ -17,6 +17,7 @@ declare module '@koishijs/plugin-console' {
     'im/delete'(...messageIds: number[]): Promise<number>
 
     'im/notify'(): void
+    'im/message'(message: IM.Message): void
   }
 
   namespace Console {
@@ -36,7 +37,20 @@ export class IM {
   constructor(private ctx: Context, private config: IM.Config) {
     const im = this as IM
 
-    // ctx.model.drop('im/messages')
+    ctx.plugin(class extends DataService<IM.Target[]> {
+      constructor(ctx: Context) { super(ctx, 'im/targets') }
+      async refresh(forced: boolean) {
+        Promise.all(Object.values(ctx.console.clients).map(async client => {
+          if (!client.auth) return
+          im.sendTo(client, 'data', 'im/targets', await im.getTargets(client.auth.id))
+        }))
+      }
+    })
+
+    ctx.plugin(class extends DataService<IM.Message[]> {
+      constructor(ctx: Context) { super(ctx, 'im/current') }
+      get = async (_) => []
+    })
 
     ctx.model.extend('im/messages', {
       id: 'unsigned',
@@ -56,6 +70,7 @@ export class IM {
       const caller = this as Client
       if (!caller.auth) return -2
       im.sessions[caller.auth.token] = {
+        userId: caller.auth.id,
         current: targetId
       }
       // await im.ctx.database.set('im/messages', { userId: targetId, targetId: caller.auth.id }, {
@@ -82,7 +97,8 @@ export class IM {
           read: false,
           deleted: false,
         })
-        im.send(targetId, 'patch', 'im/current', [message], (session) => session.current === caller.auth.id)
+        // im.send(targetId, 'patch', 'im/current', [message], (session) => session.current === caller.auth.id)
+        im.emitTo(targetId, 'im/message', message)
         im.send(caller.auth.id, 'patch', 'im/current', [message], (session) => session.current === targetId)
         im.send(targetId, 'data', 'im/targets', Object.values(await im.getTargets(targetId)))
         im.send(caller.auth.id, 'data', 'im/targets', Object.values(await im.getTargets(caller.auth.id)))
@@ -154,7 +170,24 @@ export class IM {
     return true
   }
 
-  emitTo<K extends keyof Events>(client: Client, key: K, ...args: Parameters<Events[K]>) {
+  emit<K extends keyof Events>(predicate: (session?: IM.Session) => boolean, key: K, ...args: Parameters<Events[K]>) {
+    if (!Object.keys(this.sessions).length) return
+    const data = { type: key, body: args }
+    let flag = false
+    for (const client of Object.values(this.ctx.console.clients)) {
+      if (client.auth && (!predicate || predicate(this.sessions[client.auth.token]))) {
+        client.send(data)
+        flag = true        
+      }
+    }
+    return flag
+  }
+
+  emitTo<K extends keyof Events>(targetId: number, key: K, ...args: Parameters<Events[K]>): boolean
+  emitTo<K extends keyof Events>(client: Client, key: K, ...args: Parameters<Events[K]>): boolean
+
+  emitTo<K extends keyof Events>(client: Client | number, key: K, ...args: Parameters<Events[K]>) {
+    if (typeof client === 'number') return this.emit(session => session.userId === client, key, ...args)
     const data = { type: key, body: args }
     client.send(data)
     return true
@@ -218,6 +251,7 @@ export class IM {
 export namespace IM {
     
   export interface Session {
+    userId: number
     current: number
   }
 

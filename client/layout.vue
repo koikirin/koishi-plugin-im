@@ -38,7 +38,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ChatInput, VirtualList, receive, send, store, useContext } from '@koishijs/client';
+import { IM } from '@hieuzest/koishi-plugin-im';
+import { ChatInput, VirtualList, receive, router, send, store, useContext } from '@koishijs/client';
+import { ElNotification } from 'element-plus';
 import { ref, watch } from 'vue';
 import ChatMessage from './message.vue';
 import { config } from './utils';
@@ -81,6 +83,17 @@ function sendMessage(content: string) {
   send('im/send', current(), content)
 }
 
+receive('im/message', (args) => {
+  const [message]: IM.Message[] = args
+  if (message.userId === current()) {
+    store['im/current'].push(message)
+  }
+  if (router.currentRoute.value.name != 'im' || message.userId !== current())
+    ElNotification({
+      title: `来自${message.username}的消息`, message: message.content,
+      position: 'bottom-right',
+    })
+})
 
 </script>
 

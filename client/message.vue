@@ -13,8 +13,8 @@
 
 <script lang="ts" setup>
 
+import { IM } from '@hieuzest/koishi-plugin-im';
 import { MessageContent, useMenu } from '@koishijs/client';
-import { IM } from 'koishi-plugin-im';
 
 defineProps<{
   data: IM.Message

@@ -1,5 +1,5 @@
+import { } from '@hieuzest/koishi-plugin-im'
 import { Context } from '@koishijs/client'
-import { } from 'koishi-plugin-im'
 import Layout from './layout.vue'
 
 export default (ctx: Context) => {
