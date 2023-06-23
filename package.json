@@ -1,7 +1,7 @@
 {
   "name": "@hieuzest/koishi-plugin-im",
   "description": "",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -17,7 +17,9 @@
   ],
   "koishi": {
     "service": {
-      "required": ["database"]
+      "required": [
+        "database"
+      ]
     }
   },
   "peerDependencies": {
@@ -25,6 +27,6 @@
     "koishi": "^4.13.3"
   },
   "devDependencies": {
-    "element-plus": "^2.3.6"
+    "element-plus": "^2.3.7"
   }
 }
